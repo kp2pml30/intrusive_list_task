@@ -48,7 +48,7 @@
   </head>
   <body>
     <h2>Задание Intrusive List</h2>
-    <p>В данном задании необходимо написать <a href="https://www.boost.org/doc/libs/1_74_0/doc/html/intrusive/intrusive_vs_nontrusive.html">Intrusive List</a>. Intrusive List — это такой контейнер, который представляется из себя двусвязный список. В отличие от <span class="codein">std::list</span> он не делает копии элементов вставляемых в список, а строит список из тех объектов, что ему передаются в <span class="codein">insert</span>, <span class="codein">push_front</span> и <span class="codein">push_back</span>. Пример использования:</p>
+    <p>В данном задании необходимо написать <a href="https://www.boost.org/doc/libs/1_74_0/doc/html/intrusive/intrusive_vs_nontrusive.html">Intrusive List</a>. Intrusive List — это такой контейнер, который представляет из себя двусвязный список. В отличие от <span class="codein">std::list</span> он не делает копии элементов вставляемых в список, а строит список из тех объектов, что ему передаются в <span class="codein">insert</span>, <span class="codein">push_front</span> и <span class="codein">push_back</span>. Пример использования:</p>
     <div class="codeblock"><pre><span class="keyword">struct</span> <span class="type">bookmark</span> : <span class="type">intrusive</span>::<span class="type">list_element</span>&lt;<span class="keyword">struct</span> <span class="type">bookmark_tag</span>&gt;
 {
     <span class="type">uint32_t</span> <span class="var">page</span>;
