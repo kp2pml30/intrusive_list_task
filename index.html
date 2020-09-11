@@ -1,0 +1,147 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Задание Intrusive List</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <style type="text/css">
+      .codeblock
+      {
+        background: #ffffff;
+        border: solid 1px black;
+        padding: 5px;
+        font-family: monospace;
+        white-space:pre;
+      }
+      .codein
+      {
+        font-family: monospace;
+      }
+      .keyword
+      {
+        color: #2020ff;
+      }
+      .type
+      {
+        color: #008080;
+      }
+      .var
+      {
+        color: #790000;
+      }
+      .comment
+      {
+        color: #006500;
+      }
+    td.numbers {text-align: right;}
+    td.names {text-align: left;}
+    td {text-align: center;}
+    tr.odd {background-color: #e0e0e0;}
+    img.centered {display: block; margin-left: auto; margin-right: auto;}
+    sup:target {background-color: #def;}
+    li:target {background-color: #def;}
+    p {font-family:'Liberation Sans', sans-serif; font-size: 10pt;}
+    li {font-family:'Liberation Sans', sans-serif; font-size: 10pt;}
+    h2 {font-family:'Liberation Sans', sans-serif;}
+    h3 {font-family:'Liberation Sans', sans-serif;}
+    h4 {font-family:'Liberation Sans', sans-serif;}
+    </style>
+  </head>
+  <body>
+    <h2>Задание Intrusive List</h2>
+    <p>В данном задании необходимо написать <a href="https://www.boost.org/doc/libs/1_74_0/doc/html/intrusive/intrusive_vs_nontrusive.html">Intrusive List</a>. Intrusive List — это такой контейнер, который представляется из себя двусвязный список. В отличие от <span class="codein">std::list</span> он не делает копии элементов вставляемых в список, а строит список из тех объектов, что ему передаются в <span class="codein">insert</span>, <span class="codein">push_front</span> и <span class="codein">push_back</span>. Пример использования:</p>
+    <div class="codeblock"><pre><span class="keyword">struct</span> <span class="type">bookmark</span> : <span class="type">intrusive</span>::<span class="type">list_element</span>&lt;<span class="keyword">struct</span> <span class="type">bookmark_tag</span>&gt;
+{
+    <span class="type">uint32_t</span> <span class="var">page</span>;
+
+    <span class="var">bookmark</span>(<span class="type">uint32_t</span> page)
+        : <span class="var">page</span>(page)
+    {}
+};
+
+<span class="keyword">int</span> <span class="var">main</span>()
+{
+    <span class="type">std</span>::<span class="type">vector</span>&lt;<span class="type">bookmark</span>&gt; bookmarks;
+    <span class="keyword">for</span> (<span class="type">uint32_t</span> i = 0; i != 100; i += 10)
+        bookmarks.<span class="var">push_back</span>(<span class="type">bookmark</span>(i));
+
+    <span class="type">intrusive</span>::<span class="type">list</span>&lt;<span class="type">bookmark</span>, <span class="type">bookmark_tag</span>&gt; bookmark_list;
+    <span class="keyword">for</span> (<span class="keyword">auto</span>&amp; e : bookmarks)
+        bookmark_list.<span class="var">push_front</span>(e);
+
+    <span class="keyword">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; e : bookmark_list)
+        <span class="type">std</span>::<span class="var">cout</span> &lt;&lt; e.<span class="var">get_page</span>() &lt;&lt; '\n';
+}
+</pre></div>
+    <p>В <span class="codein">intrusive::list</span> можно добавлять объекты не любых типов, а лишь тех, что наследуются от <span class="codein">intrusive::list_element&lt;Tag&gt;</span>. Шаблонный параметр <span class="codein">Tag</span> позволяет пользовательскому классу отнаследоваться сразу несколько раз от <span class="codein">intrusive::list_element</span> если это необходимо. Множественное наследование от <span class="codein">intrusive::list_element&lt;Tag&gt;</span> необходимо, если нужно добавлять один объект сразу в несколько разных списков. Чтобы указать <span class="codein">intrusive::list&lt;T, Tag&gt;</span> какую из баз у <span class="codein">T</span> он использует, ему передаётся <span class="codein">Tag</span> вторым параметром.</p>
+    <p>Если у <span class="codein">list_element</span> вызывается деструктор и этот <span class="codein">list_element</span> добавлен в какой-то список, то он должен быть автоматически удалён из этого списка (в Boost.Intrusive такое поведение называется <a href="https://www.boost.org/doc/libs/1_74_0/doc/html/intrusive/auto_unlink_hooks.html">auto-unlink hooks</a>).</p>
+    <h3>Список функций</h3>
+    <div class="codeblock"><pre><span class="keyword">namespace</span> <span class="type">intrusive</span>
+{
+    <span class="comment">/*
+    Тег по-умолчанию чтобы пользователям не нужно было
+    придумывать теги, если они используют лишь одну базу
+    list_element.
+    */</span>
+    <span class="keyword">struct</span> <span class="type">default_tag</span>;
+
+    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> <span class="type">Tag</span> = <span class="type">default_tag</span>&gt;
+    <span class="keyword">struct</span> <span class="type">list_element</span>
+    {
+        <span class="comment">/* Отвязывает элемент из списка в котором он находится. */</span>
+        <span class="keyword">void</span> <span class="var">unlink</span>();
+    };
+
+    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> <span class="type">T</span>, <span class="keyword">typename</span> <span class="type">Tag</span> = <span class="type">default_tag</span>&gt;
+    <span class="keyword">struct</span> <span class="type">list</span>
+    {
+        <span class="keyword">typedef</span> <span class="comment">/*определяется реализацией*/</span> <span class="type">iterator</span>;
+        <span class="keyword">typedef</span> <span class="comment">/*определяется реализацией*/</span> <span class="type">const_iterator</span>;
+
+        <span class="keyword">static_assert</span>(<span class="type">std</span>::<span class="var">is_convertible_v</span>&lt;<span class="type">T</span>&amp;, <span class="type">list_element</span>&lt;<span class="type">Tag</span>&gt;&amp;&gt;,
+            "value type is not convertible to list_element");
+
+        <span class="var">list</span>() <span class="keyword">noexcept</span>;
+        <span class="var">list</span>(<span class="type">list</span> <span class="keyword">const</span>&amp;) = <span class="keyword">delete</span>;
+        <span class="var">list</span>(<span class="type">list</span>&amp;&amp;) <span class="keyword">noexcept</span>;
+        <span class="var">~list</span>();
+
+        <span class="type">list</span>&amp; <span class="var">operator=</span>(<span class="type">list</span> <span class="keyword">const</span>&amp;) = <span class="keyword">delete</span>;
+        <span class="type">list</span>&amp; <span class="var">operator=</span>(<span class="type">list</span>&amp;&amp;) <span class="keyword">noexcept</span>;
+
+        <span class="keyword">void</span> <span class="var">clear</span>() <span class="keyword">noexcept</span>;
+
+        <span class="comment">/*
+        Поскольку вставка изменяет данные в list_element
+        мы принимаем неконстантный T&amp;.
+        */</span>
+        <span class="keyword">void</span> <span class="var">push_back</span>(<span class="type">T</span>&amp;) <span class="keyword">noexcept</span>;
+        <span class="keyword">void</span> <span class="var">pop_back</span>() <span class="keyword">noexcept</span>;
+        <span class="type">T</span>&amp; <span class="var">back</span>() <span class="keyword">noexcept</span>;
+        <span class="type">T</span> <span class="keyword">const</span>&amp; <span class="var">back</span>() <span class="keyword">const</span> <span class="keyword">noexcept</span>;
+
+        <span class="keyword">void</span> <span class="var">push_front</span>(<span class="type">T</span>&amp;) <span class="keyword">noexcept</span>;
+        <span class="keyword">void</span> <span class="var">pop_front</span>() <span class="keyword">noexcept</span>;
+        <span class="type">T</span>&amp; <span class="var">front</span>() <span class="keyword">noexcept</span>;
+        <span class="type">T</span> <span class="keyword">const</span>&amp; <span class="var">front</span>() <span class="keyword">const</span> <span class="keyword">noexcept</span>;
+
+        <span class="keyword">bool</span> <span class="var">empty</span>() <span class="keyword">const</span> <span class="keyword">noexcept</span>;
+
+        <span class="type">iterator</span> <span class="var">begin</span>() <span class="keyword">noexcept</span>;
+        <span class="type">const_iterator</span> <span class="var">begin</span>() <span class="keyword">const</span> <span class="keyword">noexcept</span>;
+
+        <span class="type">iterator</span> <span class="var">end</span>() <span class="keyword">noexcept</span>;
+        <span class="type">const_iterator</span> <span class="var">end</span>() <span class="keyword">const</span> <span class="keyword">noexcept</span>;
+
+        <span class="type">iterator</span> <span class="var">insert</span>(<span class="type">const_iterator</span> pos, T&amp;) <span class="keyword">noexcept</span>;
+        <span class="type">iterator</span> <span class="var">erase</span>(<span class="type">const_iterator</span> pos) <span class="keyword">noexcept</span>;
+        <span class="keyword">void</span> <span class="var">splice</span>(<span class="type">const_iterator</span> pos, <span class="type">list</span>&amp;, <span class="type">const_iterator</span> first, <span class="type">const_iterator</span> last) <span class="keyword">noexcept</span>;
+    };
+}</pre></div>
+    <p>
+      <a href="http://validator.w3.org/check?uri=referer">
+        <img src="http://www.w3.org/Icons/valid-xhtml10" alt="Valid XHTML 1.0 Strict" height="31" width="88" />
+      </a>
+    </p>
+  </body>
+</html>
+
