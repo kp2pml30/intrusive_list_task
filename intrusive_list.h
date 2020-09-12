@@ -55,7 +55,6 @@ namespace intrusive
             {}
             pointer operator->(void) const noexcept
             {
-                assert(me != nullptr);
                 return static_cast<IT*>(me);
             }
             operator reference(void) const
@@ -65,32 +64,27 @@ namespace intrusive
 
             reference operator*(void) const noexcept
             {
-                assert(me != nullptr);
                 return static_cast<IT&>(*me);
             }
 
             iterator_impl& operator++(void) noexcept
             {
-                assert(me != nullptr);
                 me = me->next;
                 return *this;
             }
             iterator_impl operator++(int) noexcept
             {
-                assert(me != nullptr);
                 auto copy = me;
                 me = me->next;
                 return iterator_impl(copy);
             }
             iterator_impl& operator--(void) noexcept
             {
-                assert(me != nullptr);
                 me = me->prev;
                 return *this;
             }
             iterator_impl operator--(int) noexcept
             {
-                assert(me != nullptr);
                 auto copy = me;
                 me = me->prev;
                 return iterator_impl(copy);
@@ -125,86 +119,69 @@ namespace intrusive
 
         list() noexcept
         {
-            clear();
+            root->next = root->prev = root;
         }
         list(list const&) = delete;
         list(list&& r) noexcept
+            : list()
         {
             operator=(std::move(r));
         }
         ~list()
         {
-            if (!empty())
-                root->next->prev = root->prev->next = nullptr;
+            clear();
             delete root;
         }
 
         list& operator=(list const&) = delete;
         list& operator=(list&& r) noexcept
         {
-            if (r.empty())
-            {
-                clear();
-                return *this;
-            }
-            r.root->next->prev = root;
-            root->next = r.root->next;
-            r.root->prev->next = root;
-            root->prev = r.root->prev;
-            r.clear();
+            clear();
+            splice(end(), r, r.begin(), r.end());
             return *this;
         }
 
         void clear() noexcept
         {
+            if (empty())
+                return;
+            // now root->next != root
+            root->next->prev = nullptr;
+            root->prev->next = nullptr;
             root->next = root->prev = root;
         }
 
         void push_back(T& u) noexcept
         {
-            auto &v = static_cast<list_element<Tag>&>(u);
-            root->prev->next = &v;
-            v.prev = root->prev;
-            v.next = root;
-            root->prev = &v;
+            insert(end(), u);
         }
         void pop_back() noexcept
         {
-            assert(!empty());
             root->prev->unlink();
         }
         T& back() noexcept
         {
-            assert(!empty());
             return static_cast<T&>(*root->prev);
         }
         T const& back() const noexcept
         {
-            assert(!empty());
             return static_cast<const T&>(*root->prev);
         }
 
         void push_front(T& u) noexcept
         {
-            auto &v = static_cast<list_element<Tag>&>(u);
-            root->next->prev = &v;
-            v.next = root->next;
-            v.prev = root;
-            root->next = &v;
+            insert(begin(), u);
         }
         void pop_front() noexcept
         {
-            assert(!empty());
             root->next->unlink();
         }
         T& front() noexcept
         {
-            assert(!empty());
             return static_cast<T&>(*root->next);
         }
         T const& front() const noexcept
         {
-            assert(!empty());
             return static_cast<T&>(*root->next);
         }
 
@@ -242,7 +219,6 @@ namespace intrusive
         }
         iterator erase(const_iterator pos) noexcept
         {
-            assert(pos.me != root);
             iterator ret(pos.me->next);
             pos.me->unlink();
             return ret;
