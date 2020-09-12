@@ -21,23 +21,18 @@ namespace intrusive
         void unlink()
         {
             if (next != nullptr)
-            {
                 next->prev = prev;
-            }
             if (prev != nullptr)
-            {
                 prev->next = next;
-            }
             prev = next = nullptr;
         }
     };
 
     template <typename T, typename Tag = default_tag>
-    struct list
+    class list
     {
     private:
-        list_element<Tag> *head = new list_element<Tag>;
-        list_element<Tag> *tail = new list_element<Tag>; // possible to reduce to 1 helper node
+        list_element<Tag> *root = new list_element<Tag>;
 
         template<typename IT>
         class iterator_impl
@@ -139,12 +134,9 @@ namespace intrusive
         }
         ~list()
         {
-            if (head->next != tail)
-                head->next->prev = nullptr;
-            if (tail->prev != head)
-                tail->prev->next = nullptr;
-            delete head;
-            delete tail;
+            if (!empty())
+                root->next->prev = root->prev->next = nullptr;
+            delete root;
         }
 
         list& operator=(list const&) = delete;
@@ -155,95 +147,92 @@ namespace intrusive
                 clear();
                 return *this;
             }
-            r.head->next->prev = head;
-            head->next = r.head->next;
-            r.tail->prev->next = tail;
-            tail->prev = r.tail->prev;
-            r.head->next = r.tail;
-            r.tail->prev = r.head;
+            r.root->next->prev = root;
+            root->next = r.root->next;
+            r.root->prev->next = root;
+            root->prev = r.root->prev;
+            r.clear();
             return *this;
         }
 
         void clear() noexcept
         {
-            head->next = tail;
-            tail->prev = head;
+            root->next = root->prev = root;
         }
 
         void push_back(T& u) noexcept
         {
             auto &v = static_cast<list_element<Tag>&>(u);
-            tail->prev->next = &v;
-            v.prev = tail->prev;
-            v.next = tail;
-            tail->prev = &v;
+            root->prev->next = &v;
+            v.prev = root->prev;
+            v.next = root;
+            root->prev = &v;
         }
         void pop_back() noexcept
         {
             assert(!empty());
-            tail->prev->unlink();
+            root->prev->unlink();
         }
         T& back() noexcept
         {
             assert(!empty());
-            return static_cast<T&>(*tail->prev);
+            return static_cast<T&>(*root->prev);
         }
         T const& back() const noexcept
         {
             assert(!empty());
-            return static_cast<const T&>(*tail->prev);
+            return static_cast<const T&>(*root->prev);
         }
 
         void push_front(T& u) noexcept
         {
             auto &v = static_cast<list_element<Tag>&>(u);
-            head->next->prev = &v;
-            v.next = head->next;
-            v.prev = head;
-            head->next = &v;
+            root->next->prev = &v;
+            v.next = root->next;
+            v.prev = root;
+            root->next = &v;
         }
         void pop_front() noexcept
         {
             assert(!empty());
-            head->next->unlink();
+            root->next->unlink();
         }
         T& front() noexcept
         {
             assert(!empty());
-            return static_cast<T&>(*head->next);
+            return static_cast<T&>(*root->next);
         }
         T const& front() const noexcept
         {
             assert(!empty());
-            return static_cast<T&>(*head->next);
+            return static_cast<T&>(*root->next);
         }
 
         bool empty() const noexcept
         {
-            return head->next == tail;
+            return root->next == root;
         }
 
         iterator begin() noexcept
         {
-            return iterator(head->next);
+            return iterator(root->next);
         }
         const_iterator begin() const noexcept
         {
-            return const_iterator(head->next);
+            return const_iterator(root->next);
         }
 
         iterator end() noexcept
         {
-            return iterator(tail);
+            return iterator(root);
         }
         const_iterator end() const noexcept
         {
-            return const_iterator(tail);
+            return const_iterator(root);
         }
 
         iterator insert(const_iterator pos, T& u) noexcept
         {
-            assert(pos.me != head);
             auto &v = static_cast<list_element<Tag>&>(u);
             pos.me->prev->next = &v;
             v.prev = pos.me->prev;
@@ -253,14 +242,13 @@ namespace intrusive
         }
         iterator erase(const_iterator pos) noexcept
         {
-            assert(pos.me != tail && pos.me != head);
+            assert(pos.me != root);
             iterator ret(pos.me->next);
             pos.me->unlink();
             return ret;
         }
         void splice(const_iterator pos, list&, const_iterator first, const_iterator last) noexcept
         {
-            assert(pos.me != head);
             if (pos == first || first == last)
                 return;
             auto *true_last = last.me->prev;
