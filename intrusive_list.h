@@ -97,12 +97,12 @@ namespace intrusive
             }
 
             template<typename T1>
-            bool operator==(const iterator_impl<T1> &r) noexcept
+            bool operator==(const iterator_impl<T1> &r) const noexcept
             {
                 return me == r.me;
             }
             template<typename T1>
-            bool operator!=(const iterator_impl<T1> &r) noexcept
+            bool operator!=(const iterator_impl<T1> &r) const noexcept
             {
                 return !operator==(r);
             }
