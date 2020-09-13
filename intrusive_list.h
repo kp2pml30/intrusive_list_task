@@ -32,7 +32,7 @@ namespace intrusive
     class list
     {
     private:
-        list_element<Tag> *root = new list_element<Tag>;
+        list_element<Tag> root;
 
         template<typename IT>
         class iterator_impl
@@ -45,8 +45,8 @@ namespace intrusive
             using reference	= value_type&;
         private:
             friend list;
-            list_element<Tag>* me;
-            explicit iterator_impl(list_element<Tag>* to) noexcept
+            list_element<Tag> *me;
+            explicit iterator_impl(decltype(me) to) noexcept
                 : me(to)
             {}
         public:
@@ -119,7 +119,7 @@ namespace intrusive
 
         list() noexcept
         {
-            root->next = root->prev = root;
+            root.next = root.prev = &root;
         }
         list(list const&) = delete;
         list(list&& r) noexcept
@@ -130,7 +130,6 @@ namespace intrusive
         ~list()
         {
             clear();
-            delete root;
         }
 
         list& operator=(list const&) = delete;
@@ -145,10 +144,18 @@ namespace intrusive
         {
             if (empty())
                 return;
-            // now root->next != root
-            root->next->prev = nullptr;
-            root->prev->next = nullptr;
-            root->next = root->prev = root;
+            // now root.next != root
+            root.prev->next = nullptr;
+            auto next = root.next;
+            root.next = root.prev = &root;
+
+            while (next->next != nullptr)
+            {
+                auto save = next->next;
+                next->prev = next->next = nullptr;
+                next = save;
+            }
+            next->prev = nullptr;
         }
 
         void push_back(T& u) noexcept
@@ -157,15 +164,15 @@ namespace intrusive
         }
         void pop_back() noexcept
         {
-            root->prev->unlink();
+            root.prev->unlink();
         }
         T& back() noexcept
         {
-            return static_cast<T&>(*root->prev);
+            return static_cast<T&>(*root.prev);
         }
         T const& back() const noexcept
         {
-            return static_cast<const T&>(*root->prev);
+            return static_cast<const T&>(*root.prev);
         }
 
         void push_front(T& u) noexcept
@@ -174,38 +181,38 @@ namespace intrusive
         }
         void pop_front() noexcept
         {
-            root->next->unlink();
+            root.next->unlink();
         }
         T& front() noexcept
         {
-            return static_cast<T&>(*root->next);
+            return static_cast<T&>(*root.next);
         }
         T const& front() const noexcept
         {
-            return static_cast<T&>(*root->next);
+            return static_cast<T&>(*root.next);
         }
 
         bool empty() const noexcept
         {
-            return root->next == root;
+            return root.next == &root;
         }
 
         iterator begin() noexcept
         {
-            return iterator(root->next);
+            return iterator(root.next);
         }
         const_iterator begin() const noexcept
         {
-            return const_iterator(root->next);
+            return const_iterator(root.next);
         }
 
         iterator end() noexcept
         {
-            return iterator(root);
+            return iterator(&root);
         }
         const_iterator end() const noexcept
         {
-            return const_iterator(root);
+            return const_iterator(const_cast<list_element<Tag>*>(&root));
         }
 
         iterator insert(const_iterator pos, T& u) noexcept
